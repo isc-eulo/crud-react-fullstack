@@ -1,0 +1,35 @@
+# --- FRONTEND (React) ---
+clientes-react-front/node_modules/
+clientes-react-front/build/
+clientes-react-front/.env.local
+clientes-react-front/.env.development.local
+clientes-react-front/.env.test.local
+clientes-react-front/.env.production.local
+clientes-react-front/npm-debug.log*
+clientes-react-front/yarn-debug.log*
+clientes-react-front/yarn-error.log*
+
+# --- BACKEND (Java / Spring Boot / Maven / Gradle) ---
+# Ignorar carpetas de compilación
+**/target/
+**/build/
+**/out/
+
+# Archivos de configuración de IDE (VS Code, IntelliJ, Eclipse)
+.vscode/
+.idea/
+*.iml
+*.iws
+.settings/
+.classpath
+.project
+.nb-gradle/
+
+# Archivos temporales y Logs
+*.log
+**/logs/
+**/temp/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Reactivo de Productos (v2)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #e67e22; } /* Color para destacar el título */
+        h2 { border-bottom: 2px solid #3498db; padding-bottom: 10px; color: #3498db; }
+        .filter-section { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background: #ecf0f1; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #3498db; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #2980b9; }
+        #resultados { margin-top: 20px; }
+        .producto { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 4px; background: #fff; }
+        .producto h3 { margin-top: 0; color: #2c3e50; }
+        .streaming-tag { color: #e67e22; font-weight: bold; } /* Estilo para destacar la carga por stream */
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Microservicio Productos (WebFlux)</h1>
+
+    <hr>
+    <h2>Carga Inicial (Modo Streaming - SSE)</h2>
+    <div id="resultados">
+        <p>Iniciando carga de productos en stream...</p>
+    </div>
+    <hr>
+
+    <div class="filter-section">
+        <h2>Filtro por Nombre de Categoría (Carga JSON Bloque)</h2>
+        <label for="categoriaNombre">Nombre de la Categoría:</label>
+        <input type="text" id="categoriaNombre" placeholder="Ej: Electrónica">
+        <button onclick="buscarPorCategoria()">Buscar por Categoría</button>
+    </div>
+
+    <div class="filter-section">
+        <h2>Filtro por Categoría y Precio Exacto (Carga JSON Bloque)</h2>
+        <label for="categoriaPrecio">Nombre de la Categoría:</label>
+        <input type="text" id="categoriaPrecio" placeholder="Ej: Limpieza">
+        <label for="precioUnitario">Precio Unitario Exacto:</label>
+        <input type="number" id="precioUnitario" placeholder="Ej: 4.99" step="0.01">
+        <button onclick="buscarPorCategoriaYPrecio()">Buscar por Categoría y Precio</button>
+    </div>
+</div>
+
+<script>
+    const BASE_URL = 'http://localhost:8080/api/productos/v2';
+    const resultadosDiv = document.getElementById('resultados');
+
+    /**
+     * Dibuja UN solo producto en el DOM. Usada para el STREAMING (SSE).
+     * @param {Object} p - Un objeto ProductoRespuestaDTO.
+     */
+    function agregarProductoAlDOM(p) {
+        const categoriaNombre = p.categoriaRequestDto ? p.categoriaRequestDto.nombre : 'N/A';
+        const productoDiv = document.createElement('div');
+        productoDiv.className = 'producto';
+        productoDiv.innerHTML = `
+            <h3>${p.nombre} (ID: ${p.id}) <span class="streaming-tag"> (Stream) </span></h3>
+            <p><strong>Categoría:</strong> ${categoriaNombre}</p>
+            <p><strong>Precio:</strong> $${p.precioUnitario.toFixed(2)}</p>
+            <p><strong>Stock:</strong> ${p.stock} unidades</p>
+        `;
+        resultadosDiv.appendChild(productoDiv);
+    }
+
+    /**
+     * Dibuja un array completo de productos en el DOM. Usada para los FILTROS (JSON Bloque).
+     * @param {Array} productos - Array de objetos ProductoRespuestaDTO.
+     */
+    function mostrarProductosBloque(productos) {
+        resultadosDiv.innerHTML = '';
+        if (productos.length === 0) {
+            resultadosDiv.innerHTML = '<p>No se encontraron productos con ese criterio.</p>';
+            return;
+        }
+
+        productos.forEach(p => {
+            const categoriaNombre = p.categoriaRequestDto ? p.categoriaRequestDto.nombre : 'N/A';
+            const productoDiv = document.createElement('div');
+            productoDiv.className = 'producto';
+            productoDiv.innerHTML = `
+                <h3>${p.nombre} (ID: ${p.id})</h3>
+                <p><strong>Categoría:</strong> ${categoriaNombre}</p>
+                <p><strong>Precio:</strong> $${p.precioUnitario.toFixed(2)}</p>
+                <p><strong>Stock:</strong> ${p.stock} unidades</p>
+            `;
+            resultadosDiv.appendChild(productoDiv);
+        });
+    }
+
+    /**
+     * Maneja los errores de la petición.
+     */
+    function mostrarError(mensaje) {
+        resultadosDiv.innerHTML = `<p class="error">Error: ${mensaje}</p>`;
+    }
+
+    // -------------------------------------------------------------------
+    // FUNCIÓN DE CARGA INICIAL (STREAMING)
+    // -------------------------------------------------------------------
+    function cargarTodosEnStream() {
+        // Limpiamos los resultados y mostramos el mensaje de espera
+        resultadosDiv.innerHTML = '<p>Conectando al stream y esperando productos...</p>';
+
+        // URL raíz: /api/productos/v2 (que mapea a @GetMapping sin ruta)
+        const url = `${BASE_URL}`;
+
+        // 1. Usar EventSource para escuchar el flujo de datos
+        const eventSource = new EventSource(url);
+
+        // 2. Escuchar el evento 'message' (Cada 'message' es un Producto emitido por el Flux)
+        eventSource.onmessage = (event) => {
+            // El SSE viene como texto, hay que parsear a objeto JavaScript
+            const producto = JSON.parse(event.data);
+            agregarProductoAlDOM(producto); // Dibuja UN producto al DOM
+        };
+
+        // 3. Manejo de errores y finalización
+        eventSource.onerror = (error) => {
+            console.error("Stream de carga inicial terminado o fallido:", error);
+            // Si el estado es 2 (CLOSED), significa que el servidor terminó de enviar todos los datos.
+            if (eventSource.readyState === EventSource.CLOSED) {
+                // Removemos el mensaje de 'esperando' si la conexión se cerró con éxito
+                const esperando = resultadosDiv.querySelector('p');
+                if (esperando && esperando.textContent.includes('esperando')) {
+                   resultadosDiv.removeChild(esperando);
+                }
+            } else {
+                 resultadosDiv.innerHTML += '<p class="error">Error de Conexión en la carga inicial.</p>';
+            }
+            eventSource.close(); // Siempre cerrar explícitamente la conexión
+        };
+
+        eventSource.onopen = () => {
+             // Limpiar el mensaje de 'esperando' justo después de abrir la conexión
+             const esperando = resultadosDiv.querySelector('p');
+             if (esperando && esperando.textContent.includes('esperando')) {
+                esperando.textContent = '';
+             }
+        };
+    }
+
+    // -------------------------------------------------------------------
+    // FUNCIÓN 1: BUSCAR POR CATEGORÍA (Mantiene el comportamiento de BLOQUE)
+    // -------------------------------------------------------------------
+    async function buscarPorCategoria() {
+        // Lógica de filtro JSON...
+        const nombre = document.getElementById('categoriaNombre').value.trim();
+        if (!nombre) {
+            mostrarError("Por favor, ingrese el nombre de la categoría.");
+            return;
+        }
+
+        resultadosDiv.innerHTML = '<p>Buscando productos por categoría (Modo Bloque)...</p>';
+
+        try {
+            const url = `${BASE_URL}/buscar/categoria?nombre=${encodeURIComponent(nombre)}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Error en la API. Código: ${response.status}`);
+            }
+            const productos = await response.json();
+            mostrarProductosBloque(productos); // Usa la función que dibuja el bloque completo
+
+        } catch (error) {
+            mostrarError(`No se pudo conectar o la búsqueda falló: ${error.message}`);
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // FUNCIÓN 2: BUSCAR POR CATEGORÍA Y PRECIO (Mantiene el comportamiento de BLOQUE)
+    // -------------------------------------------------------------------
+    async function buscarPorCategoriaYPrecio() {
+        // Lógica de filtro JSON...
+        const categoria = document.getElementById('categoriaPrecio').value.trim();
+        const precio = document.getElementById('precioUnitario').value.trim();
+        // ... (resto de su lógica de filtro) ...
+
+        if (!categoria || !precio) {
+            mostrarError("Debe ingresar tanto la categoría como el precio.");
+            return;
+        }
+
+        resultadosDiv.innerHTML = '<p>Buscando productos por categoría y precio (Modo Bloque)...</p>';
+
+        try {
+            const url = `${BASE_URL}/buscar/precio?categoria=${encodeURIComponent(categoria)}&precio=${encodeURIComponent(precio)}`;
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`Error en la API. Código: ${response.status}`);
+            }
+
+            const productos = await response.json();
+            mostrarProductosBloque(productos); // Usa la función que dibuja el bloque completo
+
+        } catch (error) {
+            mostrarError(`No se pudo conectar o la búsqueda falló: ${error.message}`);
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // INICIO: Llama a la función de streaming al cargar la página
+    // -------------------------------------------------------------------
+    window.onload = cargarTodosEnStream;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: clientes-react-back
+
+  # CONFIGURACIÓN DE BASE DE DATOS H2
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb
+    username: sa
+    password: ""
+
+  # ESTO ES LO QUE HACE QUE SE CREEN LAS TABLAS SOLAS
+  sql:
+    init:
+      mode: always # Ejecuta el schema.sql al arrancar
+
+  h2:
+    console:
+      enabled: true # Para que entres a ver tus datos en localhost:8080/h2-console
+
+# CONFIGURACIÓN DE RESILIENCIA (Tu configuración original)
+resilience4j:
+  circuitbreaker:
+    instances:
+      pokeapi:
+        slidingWindowSize: 10              # Evalúa las últimas 10 llamadas
+        failureRateThreshold: 50           # Abre el circuito si el 50% falla
+        waitDurationInOpenState: 10000     # Espera 10 segundos antes de reintentar
+  timelimiter:
+    instances:
+      pokeapi:
+        timeoutDuration: 3s                # Si la API tarda más de 3s, salta el fallback

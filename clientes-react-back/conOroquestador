@@ -1,0 +1,27 @@
+/**
+ * Orquestador que coordina micro-servicios reactivos.
+ */
+public Mono<ClienteResponseDTO> orquestarFlujo(Mono<ClienteRequestDTO> dtoMono, Flux<FilePart> archivos) {
+    return dtoMono
+        // 1. Invocamos al micro-servicio de persistencia
+        .flatMap(dto -> clienteService.guardarRegistro(dto))
+
+        .flatMap(clienteCreado -> {
+            // 2. Invocamos al micro-servicio de almacenamiento pasándole el ID
+            return storageService.guardarDocumentosPesados(clienteCreado.getId(), archivos)
+                .collectList() // Esperamos confirmación de todos los archivos
+                .thenReturn(clienteCreado);
+        })
+
+        .flatMap(clienteConArchivos -> {
+            // 3. Invocamos al micro-servicio de validaciones finales
+            return validacionService.ejecutarReglasNegocio(clienteConArchivos.getId())
+                .thenReturn(mapToResponseDTO(clienteConArchivos));
+        })
+
+        // Manejo de errores: Si cualquier micro-servicio falla, el orquestador reacciona
+        .onErrorResume(e -> {
+            log.error("Fallo en la cadena de micro-servicios: {}", e.getMessage());
+            return compensarErrores(e);
+        });
+}
