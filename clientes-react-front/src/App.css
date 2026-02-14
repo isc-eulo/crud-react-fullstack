@@ -1,0 +1,33 @@
+/* Asegura que el cuerpo ocupe al menos el 100% de la pantalla */
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    background-color: #f4f7f6; /* Un color de fondo suave */
+}
+
+/* Espaciado para que el Header y Footer no tapen el contenido */
+.container {
+    margin-top: 30px;
+    margin-bottom: 80px; /* Suficiente espacio para que el footer fijo no tape la tabla */
+}
+
+/* Estilo adicional para la tabla si deseas personalizarla más */
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    border-top-left-radius: 10px !important;
+    border-top-right-radius: 10px !important;
+}
+
+/* Ajustes para el Footer si decides no usar clases de Bootstrap */
+.footer {
+    height: 60px;
+    line-height: 60px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
