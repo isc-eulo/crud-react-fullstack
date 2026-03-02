@@ -1,25 +1,27 @@
+version: '3.8'
+
 services:
-  crud-app:
-    image: crudreac-image:latest # El nombre de la imagen que ya construiste
+  # 1. Backend CRUD
+  backend-crud:
+    image: crudreac_app:latest
     ports:
       - "9091:8081"
-    networks:
-      - mi-red-local
 
-  clientes-app:
-    image: clientes-image:latest # El nombre de tu otra imagen
+  # 2. Backend Clientes
+  backend-clientes:
+    image: clientes-react-back_clientes-react:latest
     ports:
       - "8080:8080"
-    networks:
-      - mi-red-local
 
+  # 3. Frontend (Levanta al final)
   frontend:
-    image: mi-front-image:latest
+    image: clientes-react-front_frontend:latest
     ports:
       - "3000:3000"
-    networks:
-      - mi-red-local
+    depends_on:
+      - backend-crud
+      - backend-clientes
 
 networks:
-  mi-red-local:
-    driver: bridge
+  default:
+    name: mi-red-local
