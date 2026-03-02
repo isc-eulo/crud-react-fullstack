@@ -1,0 +1,25 @@
+services:
+  crud-app:
+    image: crudreac-image:latest # El nombre de la imagen que ya construiste
+    ports:
+      - "9091:8081"
+    networks:
+      - mi-red-local
+
+  clientes-app:
+    image: clientes-image:latest # El nombre de tu otra imagen
+    ports:
+      - "8080:8080"
+    networks:
+      - mi-red-local
+
+  frontend:
+    image: mi-front-image:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - mi-red-local
+
+networks:
+  mi-red-local:
+    driver: bridge
