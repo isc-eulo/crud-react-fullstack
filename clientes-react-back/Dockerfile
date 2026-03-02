@@ -1,14 +1,14 @@
+# 1. Usamos 17 (Obligatorio para tu pom.xml)
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-# Copiamos el JAR que mencionaste al inicio
-COPY target/demo-0.0.1-SNAPSHOT-exec.jar app.jar
+# 2. El nombre del JAR debe ser el que genera ESTE proyecto
+COPY target/clientes-react-back-0.0.1-SNAPSHOT.jar app.jar
 
-# Sincronizamos el puerto interno a 8081 como dice tu properties
-ENV JAVA_OPTS="-Xmx512m -Xms256m -Dserver.port=8081 -Dserver.address=0.0.0.0 -Dspring.profiles.active=docker"
+# 3. Configuración de ejecución
+ENV JAVA_OPTS="-Xmx512m -Xms256m -Dserver.address=0.0.0.0 -Dspring.profiles.active=docker"
 
-# Exponemos el puerto real de la aplicación
-EXPOSE 8081
+EXPOSE 8080
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
