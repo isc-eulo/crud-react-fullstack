@@ -5,7 +5,7 @@ services:
     build: .
     ports:
       # Puerto externo (9091) : Puerto interno (8081)
-      - "9091:8081"
+      -"9091:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     restart: unless-stopped
