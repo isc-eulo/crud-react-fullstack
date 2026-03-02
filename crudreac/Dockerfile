@@ -7,7 +7,7 @@ WORKDIR /app
 COPY target/crudreac-0.0.1-SNAPSHOT.jar app.jar
 
 # 3. Configuración de ejecución y puerto
-ENV JAVA_OPTS="-Xmx512m -Xms256m -Dserver.address=0.0.0.0 -Dspring.profiles.active=docker"
+ENV JAVA_OPTS="-Xmx512m -Xms256m -Dserver.port=8081 -Dserver.address=0.0.0.0 -Dspring.profiles.active=docker"
 
 # Puerto configurado en este proyecto
 EXPOSE 8080
